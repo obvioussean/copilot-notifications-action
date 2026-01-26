@@ -1,0 +1,36 @@
+name: Daily Notification Summary
+
+on:
+  schedule:
+    # Run every weekday at 9 AM UTC
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  check-notifications:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Filter Important Notifications
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          copilot-token: ${{ secrets.GITHUB_TOKEN }}
+          importance-threshold: '3'
+          slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-user-id: ${{ secrets.SLACK_USER_ID }}
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Notification Check Complete 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the logs above for your important action items!" >> $GITHUB_STEP_SUMMARY

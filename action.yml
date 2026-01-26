@@ -1,0 +1,45 @@
+name: 'Notification Helper'
+description: 'Filters GitHub notifications and sends DM with action items'
+author: 'GitHub'
+inputs:
+  github-token:
+    description: 'GitHub token with notifications and user scopes'
+    required: true
+  copilot-token:
+    description: 'Token for Copilot SDK API calls'
+    required: true
+  importance-threshold:
+    description: 'Minimum importance level (1-5) to include in DM'
+    required: false
+    default: '3'
+  slack-token:
+    description: 'Slack Bot token (starts with xoxb-) for sending DMs'
+    required: false
+  slack-user-id:
+    description: 'Your Slack user ID to receive DMs (e.g., U01234567). Find it in Slack profile.'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci --omit=dev
+    
+    - name: Run notification helper
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npx tsx src/index.ts
+      env:
+        INPUT_GITHUB-TOKEN: ${{ inputs.github-token }}
+        INPUT_COPILOT-TOKEN: ${{ inputs.copilot-token }}
+        INPUT_IMPORTANCE-THRESHOLD: ${{ inputs.importance-threshold }}
+        INPUT_SLACK-TOKEN: ${{ inputs.slack-token }}
+        INPUT_SLACK-USER-ID: ${{ inputs.slack-user-id }}
