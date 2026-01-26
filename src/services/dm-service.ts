@@ -79,10 +79,14 @@ export class DMService {
       },
     ];
 
-    // Sort by importance
+    // Sort by importance and limit to top 20 to stay under Slack's 50 block limit
+    // Each notification uses ~2 blocks (section + divider), plus ~5 blocks for header/footer
+    const maxNotifications = 20;
     const sorted = notifications.sort((a, b) => b.importance - a.importance);
+    const displayed = sorted.slice(0, maxNotifications);
+    const remaining = sorted.length - displayed.length;
 
-    sorted.forEach((notif, index) => {
+    displayed.forEach((notif, index) => {
       const importanceEmoji = '⭐'.repeat(notif.importance);
       
       blocks.push({
@@ -103,10 +107,24 @@ export class DMService {
         },
       });
 
-      if (index < sorted.length - 1) {
+      if (index < displayed.length - 1) {
         blocks.push({ type: 'divider' });
       }
     });
+
+    // Add note if there are more notifications
+    if (remaining > 0) {
+      blocks.push(
+        { type: 'divider' },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `_... and ${remaining} more notification(s). Check GitHub for the full list._`,
+          },
+        }
+      );
+    }
 
     // Add footer
     blocks.push(
