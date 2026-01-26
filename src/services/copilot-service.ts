@@ -3,49 +3,24 @@ import { Notification, AnalyzedNotification } from '../types.js';
 
 export class CopilotService {
   private client: CopilotClient;
-  private token: string;
 
   constructor(token: string) {
-    this.token = token;
-    
-    console.log('Initializing CopilotClient...');
-    console.log('Token length:', token?.length || 0);
-    console.log('Token prefix:', token?.slice(0, 10) + '...');
-    
-    // Use npx to resolve the locally installed copilot CLI from @github/copilot package
-    // This works in both local development and GitHub Actions
+    // Pass the token to the Copilot CLI via environment variables
+    // The CLI accepts GITHUB_TOKEN or GH_TOKEN for authentication
+    // Requires a fine-grained PAT with "Copilot Requests" permission
     this.client = new CopilotClient({
-      cliPath: 'npx',
-      cliArgs: ['--yes', 'copilot'],
-      logLevel: 'debug',  // Enable debug logging
       env: {
         ...process.env,
         GITHUB_TOKEN: token,
-        GH_TOKEN: token,  // Copilot CLI accepts both
+        GH_TOKEN: token,
       },
     });
-    console.log('CopilotClient initialized');
   }
 
   async analyzeNotifications(
     notifications: Notification[]
   ): Promise<AnalyzedNotification[]> {
     const analyzed: AnalyzedNotification[] = [];
-
-    // Check auth status before processing
-    try {
-      console.log('Starting Copilot client...');
-      await this.client.start();
-      
-      console.log('Checking Copilot auth status...');
-      const authStatus = await this.client.getAuthStatus();
-      console.log('Auth status:', JSON.stringify(authStatus));
-      
-      const status = await this.client.getStatus();
-      console.log('CLI status:', JSON.stringify(status));
-    } catch (authError) {
-      console.error('Auth check failed:', authError);
-    }
 
     for (const notification of notifications) {
       try {
@@ -92,31 +67,37 @@ Respond in JSON format:
   "actionRequired": "<specific action needed>"
 }`;
 
-    // Create a fresh session for each notification
-    console.log('Creating Copilot session...');
     const session = await this.client.createSession({
       systemMessage: {
         mode: 'replace',
         content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
       },
     });
-    console.log('Session created:', session.sessionId);
 
     try {
-      // Register event handler to log all events for debugging
-      session.on((event) => {
-        console.log('Copilot event:', event.type, JSON.stringify(event.data || {}).slice(0, 200));
-      });
-      
-      console.log('Sending prompt to Copilot...');
       const response = await session.sendAndWait({ prompt }, 120000);
-      console.log('Response received:', response ? 'yes' : 'no');
       
       if (!response || !response.data?.content) {
         throw new Error('No response from Copilot');
       }
 
-      const parsed = JSON.parse(response.data.content);
+      // Extract JSON from response - Copilot may wrap it in markdown code blocks
+      const content = response.data.content;
+      let jsonStr = content;
+      
+      // Try to extract JSON from markdown code block
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1].trim();
+      } else {
+        // Try to find raw JSON object in the response
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonStr = jsonObjectMatch[0];
+        }
+      }
+
+      const parsed = JSON.parse(jsonStr);
       
       return {
         importance: Math.min(5, Math.max(1, parsed.importance || 3)),
