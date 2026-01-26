@@ -6,12 +6,20 @@ import { DMService } from './services/dm-service.js';
 
 async function run(): Promise<void> {
   try {
-    // Get inputs
-    const githubToken = core.getInput('github-token', { required: true });
-    const copilotToken = core.getInput('copilot-token', { required: true });
-    const importanceThreshold = parseInt(core.getInput('importance-threshold') || '3', 10);
-    const slackToken = core.getInput('slack-token') || undefined;
-    const slackUserId = core.getInput('slack-user-id') || undefined;
+    // Get inputs from environment variables
+    const githubToken = process.env.GITHUB_TOKEN;
+    const copilotToken = process.env.COPILOT_TOKEN;
+    
+    if (!githubToken) {
+      throw new Error('Input required and not supplied: github-token');
+    }
+    if (!copilotToken) {
+      throw new Error('Input required and not supplied: copilot-token');
+    }
+    
+    const importanceThreshold = parseInt(process.env.IMPORTANCE_THRESHOLD || '3', 10);
+    const slackToken = process.env.SLACK_TOKEN || undefined;
+    const slackUserId = process.env.SLACK_USER_ID || undefined;
     const currentUser = context.actor;
 
     core.info('Starting notification helper...');

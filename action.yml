@@ -38,8 +38,8 @@ runs:
         cd ${{ github.action_path }}
         npx tsx src/index.ts
       env:
-        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
-        INPUT_COPILOT_TOKEN: ${{ inputs.copilot-token }}
-        INPUT_IMPORTANCE_THRESHOLD: ${{ inputs.importance-threshold }}
-        INPUT_SLACK_TOKEN: ${{ inputs.slack-token }}
-        INPUT_SLACK_USER_ID: ${{ inputs.slack-user-id }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        COPILOT_TOKEN: ${{ inputs.copilot-token }}
+        IMPORTANCE_THRESHOLD: ${{ inputs.importance-threshold }}
+        SLACK_TOKEN: ${{ inputs.slack-token }}
+        SLACK_USER_ID: ${{ inputs.slack-user-id }}
