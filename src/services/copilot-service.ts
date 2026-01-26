@@ -49,18 +49,28 @@ export class CopilotService {
     summary: string;
     actionRequired: string;
   }> {
-    const prompt = `Analyze this GitHub notification and determine:
-1. Importance level (1-5, where 5 is most important)
-2. A brief summary
-3. What action is required from the user
+    const prompt = `Analyze this GitHub notification and determine its importance for the user.
+
+Importance scoring guide:
+- 5: User is directly mentioned by @username, assigned to the issue, or explicitly requested for review
+- 5: Team mention for code review teams (e.g., copilot-code-review, security-reviewers)
+- 4: Security issues, production bugs, or blocking issues in important repos
+- 3: Feature requests or discussions where user's input was requested
+- 2: General updates, FYI notifications, or automated team mentions (e.g., pull-requests team, docs team)
+- 1: Low priority or informational only
 
 Notification details:
 - Repository: ${notification.repository.full_name}
 - Type: ${notification.subject.type}
 - Title: ${notification.subject.title}
-- Reason: ${notification.reason}
+- Reason: ${notification.reason} (mention = direct @mention, team_mention = team was @mentioned, assign = assigned to user, review_requested = PR review needed)
 
-Respond in JSON format:
+Provide:
+1. Importance level (1-5)
+2. A one-sentence summary
+3. The specific action the user should take
+
+Respond ONLY with valid JSON (no markdown, no explanation):
 {
   "importance": <number>,
   "summary": "<brief summary>",

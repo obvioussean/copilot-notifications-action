@@ -38,15 +38,19 @@ export class NotificationService {
 
   filterMentions(notifications: Notification[]): Notification[] {
     return notifications.filter((notification) => {
-      // Filter for mentions and unread items
-      const isMention = notification.reason === 'mention' || notification.reason === 'team_mention';
       const isUnread = notification.unread;
       
-      // Also include items where user is directly assigned or review requested
+      // Direct @mention of the user
+      const isDirectMention = notification.reason === 'mention';
+      
+      // Team mentions (e.g., @org/copilot-code-review)
+      const isTeamMention = notification.reason === 'team_mention';
+      
+      // Items where user is directly assigned or review requested
       const isAssigned = notification.reason === 'assign';
       const isReviewRequested = notification.reason === 'review_requested';
-
-      return isUnread && (isMention || isAssigned || isReviewRequested);
+      
+      return isUnread && (isDirectMention || isTeamMention || isAssigned || isReviewRequested);
     });
   }
 
