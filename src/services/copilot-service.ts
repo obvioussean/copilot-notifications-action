@@ -3,11 +3,17 @@ import { Notification, AnalyzedNotification } from '../types.js';
 
 export class CopilotService {
   private client: CopilotClient;
+  private token: string;
 
   constructor(token: string) {
-    // Store token for potential future use if needed
-    // CopilotClient authentication is handled via environment or CLI
-    this.client = new CopilotClient();
+    this.token = token;
+    // Pass the token to the Copilot CLI via environment variables
+    this.client = new CopilotClient({
+      env: {
+        ...process.env,
+        GITHUB_TOKEN: token,  // Copilot CLI may use GITHUB_TOKEN for authentication
+      },
+    });
   }
 
   async analyzeNotifications(
