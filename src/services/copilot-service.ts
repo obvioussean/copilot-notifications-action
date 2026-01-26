@@ -15,45 +15,29 @@ export class CopilotService {
   ): Promise<AnalyzedNotification[]> {
     const analyzed: AnalyzedNotification[] = [];
 
-    // Create a single session for all notifications to avoid timeout issues
-    const session = await this.client.createSession({
-      systemMessage: {
-        mode: 'replace',
-        content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
-      },
-    });
-
-    try {
-      for (const notification of notifications) {
-        try {
-          const analysis = await this.analyzeNotification(notification, session);
-          analyzed.push({
-            ...notification,
-            ...analysis,
-          });
-        } catch (error) {
-          console.error(`Failed to analyze notification ${notification.id}:`, error);
-          // Add with default values if analysis fails
-          analyzed.push({
-            ...notification,
-            importance: 3,
-            summary: notification.subject.title,
-            actionRequired: 'Review and respond',
-          });
-        }
-      }
-    } finally {
+    for (const notification of notifications) {
       try {
-        await session.destroy();
-      } catch (e) {
-        console.error('Error destroying session:', e);
+        const analysis = await this.analyzeNotification(notification);
+        analyzed.push({
+          ...notification,
+          ...analysis,
+        });
+      } catch (error) {
+        console.error(`Failed to analyze notification ${notification.id}:`, error);
+        // Add with default values if analysis fails
+        analyzed.push({
+          ...notification,
+          importance: 3,
+          summary: notification.subject.title,
+          actionRequired: 'Review and respond',
+        });
       }
     }
 
     return analyzed;
   }
 
-  private async analyzeNotification(notification: Notification, session: any): Promise<{
+  private async analyzeNotification(notification: Notification): Promise<{
     importance: number;
     summary: string;
     actionRequired: string;
@@ -76,19 +60,34 @@ Respond in JSON format:
   "actionRequired": "<specific action needed>"
 }`;
 
-    const response = await session.sendAndWait({ prompt }, 30000);
-    
-    if (!response || !response.data?.content) {
-      throw new Error('No response from Copilot');
-    }
+    // Create a fresh session for each notification
+    const session = await this.client.createSession({
+      systemMessage: {
+        mode: 'replace',
+        content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
+      },
+    });
 
-    const parsed = JSON.parse(response.data.content);
-    
-    return {
-      importance: Math.min(5, Math.max(1, parsed.importance || 3)),
-      summary: parsed.summary || notification.subject.title,
-      actionRequired: parsed.actionRequired || 'Review and respond',
-    };
+    try {
+      // Register a no-op event handler to ensure events are processed
+      session.on(() => {});
+      
+      const response = await session.sendAndWait({ prompt }, 120000);
+      
+      if (!response || !response.data?.content) {
+        throw new Error('No response from Copilot');
+      }
+
+      const parsed = JSON.parse(response.data.content);
+      
+      return {
+        importance: Math.min(5, Math.max(1, parsed.importance || 3)),
+        summary: parsed.summary || notification.subject.title,
+        actionRequired: parsed.actionRequired || 'Review and respond',
+      };
+    } finally {
+      await session.destroy();
+    }
   }
 
   async cleanup() {
