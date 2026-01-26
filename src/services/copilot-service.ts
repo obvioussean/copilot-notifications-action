@@ -32,6 +32,21 @@ export class CopilotService {
   ): Promise<AnalyzedNotification[]> {
     const analyzed: AnalyzedNotification[] = [];
 
+    // Check auth status before processing
+    try {
+      console.log('Starting Copilot client...');
+      await this.client.start();
+      
+      console.log('Checking Copilot auth status...');
+      const authStatus = await this.client.getAuthStatus();
+      console.log('Auth status:', JSON.stringify(authStatus));
+      
+      const status = await this.client.getStatus();
+      console.log('CLI status:', JSON.stringify(status));
+    } catch (authError) {
+      console.error('Auth check failed:', authError);
+    }
+
     for (const notification of notifications) {
       try {
         const analysis = await this.analyzeNotification(notification);
