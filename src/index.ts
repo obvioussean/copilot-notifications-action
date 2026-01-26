@@ -12,6 +12,7 @@ async function run(): Promise<void> {
     const importanceThreshold = parseInt(core.getInput('importance-threshold') || '3', 10);
     const slackToken = core.getInput('slack-token') || undefined;
     const slackUserId = core.getInput('slack-user-id') || undefined;
+    const currentUser = context.actor;
 
     core.info('Starting notification helper...');
 
@@ -35,10 +36,23 @@ async function run(): Promise<void> {
       return;
     }
 
+    // Remove items you have already responded to
+    core.info('Removing notifications you have already responded to...');
+    const unrespondedNotifications = await notificationService.filterUnresponded(
+      mentionNotifications,
+      currentUser
+    );
+    core.info(`Remaining after response check: ${unrespondedNotifications.length}`);
+
+    if (unrespondedNotifications.length === 0) {
+      core.info('All mention notifications already handled.');
+      return;
+    }
+
     // Analyze importance using Copilot
     core.info('Analyzing notification importance with Copilot...');
     const analyzedNotifications = await copilotService.analyzeNotifications(
-      mentionNotifications,
+      unrespondedNotifications,
       importanceThreshold
     );
     
@@ -54,7 +68,6 @@ async function run(): Promise<void> {
 
     // Send DM with action items
     core.info('Sending DM with action items...');
-    const currentUser = context.actor;
     await dmService.sendActionItemsDM(currentUser, importantNotifications);
     
     // Clean up Copilot client
