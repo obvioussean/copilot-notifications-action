@@ -59,6 +59,22 @@ Critical bug in production
 
 ### Prerequisites
 
+#### GitHub Copilot Token
+
+This action requires a GitHub Personal Access Token (fine-grained) with **Copilot Requests** permission enabled:
+
+1. **Create a fine-grained PAT**:
+   - Visit https://github.com/settings/personal-access-tokens/new
+   - Under "Permissions," click "Add permissions" and select **"Copilot Requests"**
+   - Also enable **"Notifications"** (read access)
+   - Generate your token
+
+2. **Store as GitHub Secret**:
+   - In your repo: Settings → Secrets → Actions
+   - Add `COPILOT_TOKEN` with your PAT value
+
+> **Note:** This token needs the "Copilot Requests" permission to use the Copilot CLI for analyzing notifications. Regular GitHub tokens won't work.
+
 #### Setting Up Slack (Optional but Recommended)
 
 1. **Create a Slack App**:

@@ -7,11 +7,16 @@ export class CopilotService {
 
   constructor(token: string) {
     this.token = token;
-    // Pass the token to the Copilot CLI via environment variables
+    
+    // Use npx to resolve the locally installed copilot CLI from @github/copilot package
+    // This works in both local development and GitHub Actions
     this.client = new CopilotClient({
+      cliPath: 'npx',
+      cliArgs: ['--yes', 'copilot'],
       env: {
         ...process.env,
-        GITHUB_TOKEN: token,  // Copilot CLI may use GITHUB_TOKEN for authentication
+        GITHUB_TOKEN: token,
+        GH_TOKEN: token,  // Copilot CLI accepts both
       },
     });
   }
