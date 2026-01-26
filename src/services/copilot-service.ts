@@ -8,17 +8,23 @@ export class CopilotService {
   constructor(token: string) {
     this.token = token;
     
+    console.log('Initializing CopilotClient...');
+    console.log('Token length:', token?.length || 0);
+    console.log('Token prefix:', token?.slice(0, 10) + '...');
+    
     // Use npx to resolve the locally installed copilot CLI from @github/copilot package
     // This works in both local development and GitHub Actions
     this.client = new CopilotClient({
       cliPath: 'npx',
       cliArgs: ['--yes', 'copilot'],
+      logLevel: 'debug',  // Enable debug logging
       env: {
         ...process.env,
         GITHUB_TOKEN: token,
         GH_TOKEN: token,  // Copilot CLI accepts both
       },
     });
+    console.log('CopilotClient initialized');
   }
 
   async analyzeNotifications(
@@ -72,18 +78,24 @@ Respond in JSON format:
 }`;
 
     // Create a fresh session for each notification
+    console.log('Creating Copilot session...');
     const session = await this.client.createSession({
       systemMessage: {
         mode: 'replace',
         content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
       },
     });
+    console.log('Session created:', session.sessionId);
 
     try {
-      // Register a no-op event handler to ensure events are processed
-      session.on(() => {});
+      // Register event handler to log all events for debugging
+      session.on((event) => {
+        console.log('Copilot event:', event.type, JSON.stringify(event.data || {}).slice(0, 200));
+      });
       
+      console.log('Sending prompt to Copilot...');
       const response = await session.sendAndWait({ prompt }, 120000);
+      console.log('Response received:', response ? 'yes' : 'no');
       
       if (!response || !response.data?.content) {
         throw new Error('No response from Copilot');
