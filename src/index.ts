@@ -60,8 +60,7 @@ async function run(): Promise<void> {
     // Analyze importance using Copilot
     core.info('Analyzing notification importance with Copilot...');
     const analyzedNotifications = await copilotService.analyzeNotifications(
-      unrespondedNotifications,
-      importanceThreshold
+      unrespondedNotifications
     );
     
     const importantNotifications = analyzedNotifications.filter(

@@ -5,40 +5,55 @@ export class CopilotService {
   private client: CopilotClient;
 
   constructor(token: string) {
-    // Note: The Copilot SDK client doesn't require a token in constructor
-    // Authentication is handled automatically via the GitHub Copilot CLI
+    // Store token for potential future use if needed
+    // CopilotClient authentication is handled via environment or CLI
     this.client = new CopilotClient();
   }
 
   async analyzeNotifications(
-    notifications: Notification[],
-    threshold: number
+    notifications: Notification[]
   ): Promise<AnalyzedNotification[]> {
     const analyzed: AnalyzedNotification[] = [];
 
-    for (const notification of notifications) {
+    // Create a single session for all notifications to avoid timeout issues
+    const session = await this.client.createSession({
+      systemMessage: {
+        mode: 'replace',
+        content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
+      },
+    });
+
+    try {
+      for (const notification of notifications) {
+        try {
+          const analysis = await this.analyzeNotification(notification, session);
+          analyzed.push({
+            ...notification,
+            ...analysis,
+          });
+        } catch (error) {
+          console.error(`Failed to analyze notification ${notification.id}:`, error);
+          // Add with default values if analysis fails
+          analyzed.push({
+            ...notification,
+            importance: 3,
+            summary: notification.subject.title,
+            actionRequired: 'Review and respond',
+          });
+        }
+      }
+    } finally {
       try {
-        const analysis = await this.analyzeNotification(notification);
-        analyzed.push({
-          ...notification,
-          ...analysis,
-        });
-      } catch (error) {
-        console.error(`Failed to analyze notification ${notification.id}:`, error);
-        // Add with default values if analysis fails
-        analyzed.push({
-          ...notification,
-          importance: 3,
-          summary: notification.subject.title,
-          actionRequired: 'Review and respond',
-        });
+        await session.destroy();
+      } catch (e) {
+        console.error('Error destroying session:', e);
       }
     }
 
     return analyzed;
   }
 
-  private async analyzeNotification(notification: Notification): Promise<{
+  private async analyzeNotification(notification: Notification, session: any): Promise<{
     importance: number;
     summary: string;
     actionRequired: string;
@@ -61,30 +76,19 @@ Respond in JSON format:
   "actionRequired": "<specific action needed>"
 }`;
 
-    const session = await this.client.createSession({
-      systemMessage: {
-        mode: 'replace',
-        content: 'You are a helpful assistant that analyzes GitHub notifications to determine their importance and required actions. Always respond with valid JSON.',
-      },
-    });
-
-    try {
-      // Send message and wait for response
-      const response = await session.sendAndWait({ prompt });
-      
-      if (!response || !response.data.content) {
-        throw new Error('No response from Copilot');
-      }
-
-      const parsed = JSON.parse(response.data.content);
-      return {
-        importance: parsed.importance || 3,
-        summary: parsed.summary || notification.subject.title,
-        actionRequired: parsed.actionRequired || 'Review and respond',
-      };
-    } finally {
-      await session.destroy();
+    const response = await session.sendAndWait({ prompt }, 30000);
+    
+    if (!response || !response.data?.content) {
+      throw new Error('No response from Copilot');
     }
+
+    const parsed = JSON.parse(response.data.content);
+    
+    return {
+      importance: Math.min(5, Math.max(1, parsed.importance || 3)),
+      summary: parsed.summary || notification.subject.title,
+      actionRequired: parsed.actionRequired || 'Review and respond',
+    };
   }
 
   async cleanup() {
