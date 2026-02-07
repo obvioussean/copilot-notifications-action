@@ -1,4 +1,4 @@
-name: 'Notification Helper'
+name: 'Copilot Notifications Action'
 description: 'Filters GitHub notifications and sends DM with action items'
 author: 'GitHub'
 inputs:
@@ -18,6 +18,10 @@ inputs:
   slack-user-id:
     description: 'Your Slack user ID to receive DMs (e.g., U01234567). Find it in Slack profile.'
     required: false
+  mark-as-read:
+    description: 'Mark processed notifications as read after sending the summary'
+    required: false
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -43,3 +47,4 @@ runs:
         IMPORTANCE_THRESHOLD: ${{ inputs.importance-threshold }}
         SLACK_TOKEN: ${{ inputs.slack-token }}
         SLACK_USER_ID: ${{ inputs.slack-user-id }}
+        MARK_AS_READ: ${{ inputs.mark-as-read }}

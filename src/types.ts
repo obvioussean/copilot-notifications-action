@@ -14,6 +14,7 @@ export interface Notification {
   updated_at: string;
   last_read_at: string | null;
   url: string;
+  subject_created_at?: string;
 }
 
 export interface AnalyzedNotification extends Notification {

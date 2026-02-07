@@ -1,4 +1,4 @@
-# Notification Helper
+# Copilot Notifications Action
 
 A GitHub Action that uses the GitHub Copilot SDK to intelligently filter your notifications and send you action items for the most important ones.
 
@@ -80,7 +80,7 @@ This action requires a GitHub Personal Access Token (fine-grained) with **Copilo
 1. **Create a Slack App**:
    - Go to https://api.slack.com/apps
    - Click "Create New App" → "From scratch"
-   - Name it (e.g., "Notification Helper") and select your workspace
+   - Name it (e.g., "Copilot Notifications Action") and select your workspace
 
 2. **Add Bot Token Scopes**:
    - Go to "OAuth & Permissions"
@@ -104,7 +104,7 @@ This action requires a GitHub Personal Access Token (fine-grained) with **Copilo
 
 ### Basic Workflow
 
-Create a file `.github/workflows/notification-helper.yml`:
+Create a file `.github/workflows/copilot-notifications.yml`:
 
 ```yaml
 name: Daily Notification Summary
@@ -159,7 +159,7 @@ jobs:
   morning-summary:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-username/notification-helper@v1
+      - uses: your-username/copilot-notifications-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           copilot-token: ${{ secrets.GITHUB_TOKEN }}
@@ -177,7 +177,7 @@ jobs:
   check-now:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-username/notification-helper@v1
+      - uses: your-username/copilot-notifications-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           copilot-token: ${{ secrets.GITHUB_TOKEN }}
@@ -212,7 +212,7 @@ npm run format
 ### Project Structure
 
 ```
-notification-helper/
+copilot-notifications-action/
 ├── .github/
 │   └── copilot-instructions.md  # Copilot workspace instructions
 ├── src/

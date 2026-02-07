@@ -89,11 +89,16 @@ export class DMService {
     displayed.forEach((notif, index) => {
       const importanceEmoji = '⭐'.repeat(notif.importance);
       
+      const createdDate = notif.subject_created_at
+        ? `\n📅 Created: <!date^${Math.floor(new Date(notif.subject_created_at).getTime() / 1000)}^{date_short_pretty} at {time}|${new Date(notif.subject_created_at).toLocaleString()}>`
+        : '';
+      const notifiedDate = `\n🔔 Notified: <!date^${Math.floor(new Date(notif.updated_at).getTime() / 1000)}^{date_short_pretty} at {time}|${new Date(notif.updated_at).toLocaleString()}>`;
+
       blocks.push({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*${index + 1}. ${notif.repository.full_name}*\n${importanceEmoji} Importance: ${notif.importance}/5\n\n*${notif.subject.title}*\n\n📝 ${notif.summary}\n✅ *Action:* ${notif.actionRequired}`,
+          text: `*${index + 1}. ${notif.repository.full_name}*\n${importanceEmoji} Importance: ${notif.importance}/5\n\n*${notif.subject.title}*\n\n📝 ${notif.summary}\n✅ *Action:* ${notif.actionRequired}${createdDate}${notifiedDate}`,
         },
         accessory: {
           type: 'button',
@@ -156,7 +161,10 @@ export class DMService {
         message += `   📝 Summary: ${notif.summary}\n`;
         message += `   ✅ Action Required: ${notif.actionRequired}\n`;
         message += `   🔗 Link: ${notif.subject.url || notif.repository.html_url}\n`;
-        message += `   ⏰ Updated: ${new Date(notif.updated_at).toLocaleString()}\n\n`;
+        if (notif.subject_created_at) {
+          message += `   📅 Created: ${new Date(notif.subject_created_at).toLocaleString()}\n`;
+        }
+        message += `   🔔 Notified: ${new Date(notif.updated_at).toLocaleString()}\n\n`;
       });
 
     return message;

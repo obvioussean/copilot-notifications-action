@@ -1,5 +1,5 @@
 {
-  "name": "notification-helper",
+  "name": "copilot-notifications-action",
   "version": "1.0.0",
   "description": "GitHub Action to filter notifications and send DM with action items",
   "main": "src/index.ts",
@@ -25,6 +25,7 @@
     "typescript": "^5.3.3"
   },
   "devDependencies": {
+    "@octokit/types": "^13.0.0",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",

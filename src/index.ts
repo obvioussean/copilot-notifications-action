@@ -20,6 +20,7 @@ async function run(): Promise<void> {
     const importanceThreshold = parseInt(process.env.IMPORTANCE_THRESHOLD || '3', 10);
     const slackToken = process.env.SLACK_TOKEN || undefined;
     const slackUserId = process.env.SLACK_USER_ID || undefined;
+    const markAsRead = process.env.MARK_AS_READ === 'true';
     const currentUser = context.actor;
 
     core.info('Starting notification helper...');
@@ -57,10 +58,17 @@ async function run(): Promise<void> {
       return;
     }
 
+    // Enrich with issue/PR creation dates (single GraphQL request)
+    // Done before Copilot analysis so the LLM can factor in age and recency
+    core.info('Fetching issue/PR creation dates...');
+    const enrichedNotifications = await notificationService.enrichWithCreationDates(
+      unrespondedNotifications
+    );
+
     // Analyze importance using Copilot
     core.info('Analyzing notification importance with Copilot...');
     const analyzedNotifications = await copilotService.analyzeNotifications(
-      unrespondedNotifications
+      enrichedNotifications
     );
     
     const importantNotifications = analyzedNotifications.filter(
@@ -76,6 +84,12 @@ async function run(): Promise<void> {
     // Send DM with action items
     core.info('Sending DM with action items...');
     await dmService.sendActionItemsDM(currentUser, importantNotifications);
+
+    // Mark processed notifications as read if configured
+    if (markAsRead) {
+      core.info('Marking processed notifications as read...');
+      await notificationService.markAsRead(importantNotifications);
+    }
     
     // Clean up Copilot client
     await copilotService.cleanup();
