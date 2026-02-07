@@ -64,7 +64,7 @@ Notification details:
 - Type: ${notification.subject.type}
 - Title: ${notification.subject.title}
 - Reason: ${notification.reason} (mention = direct @mention, team_mention = team was @mentioned, assign = assigned to user, review_requested = PR review needed)
-- Notification date: ${notification.updated_at}${notification.subject_created_at ? `\n- Issue/PR created: ${notification.subject_created_at}` : ''}
+- Notification date: ${notification.updated_at}${notification.subject_created_at ? `\n- Issue/PR created: ${notification.subject_created_at}` : ''}${notification.subject_state ? `\n- Status: ${notification.subject_state}` : ''}
 
 Provide:
 1. Importance level (1-5)

@@ -156,28 +156,39 @@ export class NotificationService {
     const fragments = enrichable.map((entry, i) => {
       const { owner, repo, number } = entry.parsed;
       if (entry.notification.subject.type === 'Issue') {
-        return `n${i}: repository(owner: "${owner}", name: "${repo}") { issue(number: ${number}) { createdAt } }`;
+        return `n${i}: repository(owner: "${owner}", name: "${repo}") { issue(number: ${number}) { createdAt state } }`;
       }
-      return `n${i}: repository(owner: "${owner}", name: "${repo}") { pullRequest(number: ${number}) { createdAt } }`;
+      return `n${i}: repository(owner: "${owner}", name: "${repo}") { pullRequest(number: ${number}) { createdAt state merged } }`;
     });
 
     const query = `query { ${fragments.join('\n')} }`;
 
     try {
-      const result = await this.octokit.graphql<Record<string, { issue?: { createdAt: string }; pullRequest?: { createdAt: string } }>>(query);
+      const result = await this.octokit.graphql<Record<string, { issue?: { createdAt: string; state: string }; pullRequest?: { createdAt: string; state: string; merged: boolean } }>>(query);
 
-      const createdAtMap = new Map<Notification, string>();
+      const enrichmentMap = new Map<Notification, { createdAt?: string; state?: 'open' | 'closed' | 'merged' }>();
       enrichable.forEach((entry, i) => {
         const node = result[`n${i}`];
         const createdAt = node?.issue?.createdAt ?? node?.pullRequest?.createdAt;
-        if (createdAt) {
-          createdAtMap.set(entry.notification, createdAt);
+        let state: 'open' | 'closed' | 'merged' | undefined;
+        if (node?.pullRequest) {
+          state = node.pullRequest.merged ? 'merged' : node.pullRequest.state.toLowerCase() as 'open' | 'closed';
+        } else if (node?.issue) {
+          state = node.issue.state.toLowerCase() as 'open' | 'closed';
+        }
+        if (createdAt || state) {
+          enrichmentMap.set(entry.notification, { createdAt, state });
         }
       });
 
       return notifications.map((n) => {
-        const createdAt = createdAtMap.get(n);
-        return createdAt ? { ...n, subject_created_at: createdAt } : n;
+        const enrichment = enrichmentMap.get(n);
+        if (!enrichment) return n;
+        return {
+          ...n,
+          ...(enrichment.createdAt && { subject_created_at: enrichment.createdAt }),
+          ...(enrichment.state && { subject_state: enrichment.state }),
+        };
       });
     } catch {
       // Fall back gracefully if GraphQL fails

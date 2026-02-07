@@ -89,6 +89,8 @@ export class DMService {
     displayed.forEach((notif, index) => {
       const importanceEmoji = '⭐'.repeat(notif.importance);
       
+      const stateEmoji = notif.subject_state === 'merged' ? '🟣' : notif.subject_state === 'closed' ? '🔴' : notif.subject_state === 'open' ? '🟢' : '';
+      const stateText = notif.subject_state ? `\n${stateEmoji} Status: ${notif.subject_state}` : '';
       const createdDate = notif.subject_created_at
         ? `\n📅 Created: <!date^${Math.floor(new Date(notif.subject_created_at).getTime() / 1000)}^{date_short_pretty} at {time}|${new Date(notif.subject_created_at).toLocaleString()}>`
         : '';
@@ -98,7 +100,7 @@ export class DMService {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*${index + 1}. ${notif.repository.full_name}*\n${importanceEmoji} Importance: ${notif.importance}/5\n\n*${notif.subject.title}*\n\n📝 ${notif.summary}\n✅ *Action:* ${notif.actionRequired}${createdDate}${notifiedDate}`,
+          text: `*${index + 1}. ${notif.repository.full_name}*\n${importanceEmoji} Importance: ${notif.importance}/5\n\n*${notif.subject.title}*${stateText}\n\n📝 ${notif.summary}\n✅ *Action:* ${notif.actionRequired}${createdDate}${notifiedDate}`,
         },
         accessory: {
           type: 'button',
@@ -157,6 +159,10 @@ export class DMService {
       .sort((a, b) => b.importance - a.importance)
       .forEach((notif, index) => {
         message += `${index + 1}. **[${notif.repository.full_name}]** ${notif.subject.title}\n`;
+        if (notif.subject_state) {
+          const emoji = notif.subject_state === 'merged' ? '🟣' : notif.subject_state === 'closed' ? '🔴' : '🟢';
+          message += `   ${emoji} Status: ${notif.subject_state}\n`;
+        }
         message += `   📍 Importance: ${notif.importance}/5\n`;
         message += `   📝 Summary: ${notif.summary}\n`;
         message += `   ✅ Action Required: ${notif.actionRequired}\n`;

@@ -15,6 +15,7 @@ export interface Notification {
   last_read_at: string | null;
   url: string;
   subject_created_at?: string;
+  subject_state?: 'open' | 'closed' | 'merged';
 }
 
 export interface AnalyzedNotification extends Notification {
