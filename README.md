@@ -1,4 +1,4 @@
-# Copilot Notifications Action
+# Copilot Notifications Acton
 
 A GitHub Action that uses the GitHub Copilot SDK to intelligently filter your notifications and send you action items for the most important ones.
 
